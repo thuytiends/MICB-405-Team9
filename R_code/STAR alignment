@@ -1,0 +1,8 @@
+# STAR ALIGNMENT IN UNIX 
+STAR \
+  --genomeDir <GENOME_INDEX_DIR> \
+  --readFilesIn <READS_DIR> \
+  --outSAMtype BAM SortedByCoordinate \
+  --runThreadN <THREADS> \
+  --quantMode GeneCounts \
+  --alignIntronMax 1000000
