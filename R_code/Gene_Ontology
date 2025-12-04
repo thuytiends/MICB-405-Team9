@@ -1,0 +1,91 @@
+##install.packages("gprofiler2")
+
+library(gprofiler2)
+library(ggplot2)
+library(stringr)
+library(dplyr)
+
+##upregulated genes (male vs female septic)
+mf_s_up <- read.table("mf_septic_up_genes.csv",
+                  sep = ",",
+                  col.names = c("no.", "gene_id"),
+                  skip = 1)
+
+gene_list_up <- mf_s_up$gene_id
+
+gostres_up <- gost(query = gene_list_up, organism = "hsapiens")
+
+res_up <- gostres_up$result
+
+##downregulatd genes (male vs female septic)
+mf_s_down <- read.table("mf_septic_down_genes.csv",
+                   sep = ",",
+                   col.names = c("no.", "gene_id"),
+                   skip = 1)
+
+gene_list_down <- mf_s_down$gene_id
+
+gostres_down <- gost(query = gene_list_down, organism = "hsapiens")
+
+res_down <- gostres_down$result
+
+#####plot upregulated
+
+ggplot(res_up, aes(x = reorder(term_name, -log10(p_value)),
+                   y = -log10(p_value))) +
+  geom_bar(stat = "identity", fill = "#1E90FF", color = "#104E8B", width = 0.7) +
+  geom_text(aes(label = sprintf("%.2e", p_value)), hjust = -0.3, size = 4.5, color = "black") +
+  coord_flip(clip = "off") +
+  labs(x = NULL, y = "-log10(p-value)", title = "Upregulated Pathways in Male Septic Patients") +
+  scale_y_continuous(limits = c(0, 3), breaks = seq(0, 3, 1), expand = c(0, 0)) +
+  theme_minimal(base_size = 12) +
+  theme(
+    panel.grid = element_blank(),
+    axis.line = element_line(color = "black", size = 0.8),
+    axis.ticks = element_line(color = "black"),
+    axis.text.y = element_text(size = 20, color = "black"),
+    axis.text.x = element_text(size = 16, color = "black"),      
+    axis.title.x = element_text(size = 16, color = "black", face = "bold"), 
+    plot.title = element_text(size = 28, face = "bold", hjust = 0.5),
+    plot.title.position = "plot",
+    plot.margin = margin(20, 60, 20, 20)
+  )
+
+ggsave("septic_mf_bar_upregulated.png", width = 12, height = 8, dpi = 300, limitsize = FALSE)
+
+
+#####plot downregulated
+
+# Wrap long labels
+res_down$term_name <- str_wrap(res_down$term_name, width = 30)
+
+#limit to top N terms (by p-value)
+top_terms <- res_down %>%
+  arrange(p_value) %>%
+  slice_head(n = 10)
+
+###this is the good one
+p <- ggplot(top_terms, aes(x = reorder(term_name, -log10(p_value)),
+                           y = -log10(p_value))) +
+  geom_bar(stat = "identity", fill = "#1E90FF", color = "#104E8B", width = 0.7) +
+  geom_text(aes(label = sprintf("%.2e", p_value)), 
+            hjust = -0.3, size = 4.5, color = "black") +
+  coord_flip(clip = "off") +
+  scale_y_continuous(expand = c(0, 0), limits = c(0, 10)) +  
+  labs(x = NULL, y = "-log10(p-value)",
+       title = "Upregulated Pathways in Female Septic Patients") +
+  theme_minimal(base_size = 12) +
+  theme(
+    panel.grid = element_blank(),
+    axis.line = element_line(color = "black", size = 0.8),
+    axis.ticks = element_line(color = "black"),
+    axis.text.y = element_text(size = 20, color = "black"),
+    axis.text.x = element_text(size = 16, color = "black"),
+    axis.title.x = element_text(size = 16, color = "black", face = "bold"), 
+    plot.title = element_text(size = 28, face = "bold", hjust = 0.5),
+    plot.title.position = "plot",
+    plot.margin = margin(20, 80, 20, 20)  
+  )
+print(p)
+
+ggsave("septic_mf_bar_downregulated.png", width = 12, height = 8, dpi = 300, limitsize = FALSE)
